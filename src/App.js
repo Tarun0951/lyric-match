@@ -315,7 +315,7 @@ function App() {
       </main>
       
       <footer>
-        <p>Created by Your Name • Powered by Lyric Match API</p>
+        <p>Created by  Baswa Tarun</p>
       </footer>
     </div>
   );
