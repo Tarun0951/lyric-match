@@ -16,6 +16,7 @@ function App() {
   const [hintsAvailable, setHintsAvailable] = useState(0);
   const [currentHint, setCurrentHint] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
   // API base URL - change this to your actual API URL
   const API_URL = 'https://lyric-match-api.onrender.com/api';
@@ -42,6 +43,7 @@ function App() {
     setCorrectSong('');
     setCurrentHint('');
     setUserGuess('');
+    setGameOver(false);
     
     try {
       const response = await fetch(`${API_URL}/start`, {
@@ -94,7 +96,8 @@ function App() {
       
       if (data.correct_song) {
         setCorrectSong(data.correct_song);
-        setGameActive(false);
+        setGameOver(true);
+        // Don't set gameActive to false here - we still want to show the game panel
       }
     } catch (error) {
       console.error('Error submitting guess:', error);
@@ -144,7 +147,7 @@ function App() {
   };
 
   const cancelGame = async () => {
-    if (sessionId) {
+    if (sessionId && !gameOver) {
       try {
         await fetch(`${API_URL}/session/${sessionId}`, {
           method: 'DELETE',
@@ -162,6 +165,13 @@ function App() {
     setCorrectSong('');
     setCurrentHint('');
     setUserGuess('');
+    setGameOver(false);
+  };
+
+  const startNewGame = () => {
+    setGameActive(false);
+    setGameOver(false);
+    // We'll let them configure settings again before starting a new game
   };
 
   return (
@@ -225,22 +235,38 @@ function App() {
               </blockquote>
             </div>
             
-            <div className="guess-box">
-              <input
-                type="text"
-                placeholder="Enter song and artist..."
-                value={userGuess}
-                onChange={(e) => setUserGuess(e.target.value)}
-                disabled={loading || isCorrect}
-              />
-              <button 
-                className="primary-button" 
-                onClick={submitGuess}
-                disabled={loading || isCorrect}
-              >
-                {loading ? 'Submitting...' : 'Submit Guess'}
-              </button>
-            </div>
+            {!gameOver ? (
+              <div className="guess-box">
+                <input
+                  type="text"
+                  placeholder="Enter song and artist..."
+                  value={userGuess}
+                  onChange={(e) => setUserGuess(e.target.value)}
+                  disabled={loading}
+                />
+                <button 
+                  className="primary-button" 
+                  onClick={submitGuess}
+                  disabled={loading}
+                >
+                  {loading ? 'Submitting...' : 'Submit Guess'}
+                </button>
+              </div>
+            ) : (
+              <div className="game-over-panel">
+                <h3>Game Over!</h3>
+                <div className="correct-answer">
+                  <p>The correct answer was:</p>
+                  <h2>{correctSong}</h2>
+                </div>
+                <button 
+                  className="primary-button" 
+                  onClick={startNewGame}
+                >
+                  Play Again
+                </button>
+              </div>
+            )}
             
             {feedback && (
               <div className={`feedback ${isCorrect ? 'correct' : ''}`}>
@@ -248,50 +274,48 @@ function App() {
               </div>
             )}
             
-            {correctSong && (
-              <div className="correct-answer">
-                Correct Answer: <strong>{correctSong}</strong>
+            {!gameOver && (
+              <div className="hints-panel">
+                <h3>Need a Hint? ({hintsAvailable} remaining)</h3>
+                <div className="hint-buttons">
+                  <button onClick={() => getHint('artist')} disabled={hintsAvailable <= 0 || loading}>
+                    Artist
+                  </button>
+                  <button onClick={() => getHint('year')} disabled={hintsAvailable <= 0 || loading}>
+                    Year
+                  </button>
+                  <button onClick={() => getHint('genre')} disabled={hintsAvailable <= 0 || loading}>
+                    Genre
+                  </button>
+                  <button onClick={() => getHint('first_letter')} disabled={hintsAvailable <= 0 || loading}>
+                    First Letter
+                  </button>
+                  <button onClick={() => getHint('word_count')} disabled={hintsAvailable <= 0 || loading}>
+                    Word Count
+                  </button>
+                </div>
+                
+                {currentHint && (
+                  <div className="hint-box">
+                    <p><strong>Hint:</strong> {currentHint}</p>
+                  </div>
+                )}
               </div>
             )}
             
-            <div className="hints-panel">
-              <h3>Need a Hint? ({hintsAvailable} remaining)</h3>
-              <div className="hint-buttons">
-                <button onClick={() => getHint('artist')} disabled={hintsAvailable <= 0 || loading}>
-                  Artist
-                </button>
-                <button onClick={() => getHint('year')} disabled={hintsAvailable <= 0 || loading}>
-                  Year
-                </button>
-                <button onClick={() => getHint('genre')} disabled={hintsAvailable <= 0 || loading}>
-                  Genre
-                </button>
-                <button onClick={() => getHint('first_letter')} disabled={hintsAvailable <= 0 || loading}>
-                  First Letter
-                </button>
-                <button onClick={() => getHint('word_count')} disabled={hintsAvailable <= 0 || loading}>
-                  Word Count
+            {!gameOver && (
+              <div className="controls">
+                <button className="secondary-button" onClick={cancelGame}>
+                  Cancel Game
                 </button>
               </div>
-              
-              {currentHint && (
-                <div className="hint-box">
-                  <p><strong>Hint:</strong> {currentHint}</p>
-                </div>
-              )}
-            </div>
-            
-            <div className="controls">
-              <button className="secondary-button" onClick={cancelGame}>
-                {correctSong ? 'New Game' : 'Cancel Game'}
-              </button>
-            </div>
+            )}
           </div>
         )}
       </main>
       
       <footer>
-        <p>Created by Baswa Tarun</p>
+        <p>Created by Your Name • Powered by Lyric Match API</p>
       </footer>
     </div>
   );
